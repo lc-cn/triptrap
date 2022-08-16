@@ -1,10 +1,10 @@
 {
-  "name": "@lc-cn/ts-dev-template",
+  "name": "event-deliver",
   "version": "1.0.0",
-  "description": "ts开发环境配置",
+  "description": "一个不一样的事件传送器",
   "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
-    "start": "node .",
     "build": "tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
     "dev": "ts-node-dev -r tsconfig-paths/register ./src/index.ts",
     "pub": "npm publish --access public",
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lc-cn/ts-dev-template.git"
+    "url": "git+https://github.com/liucl-cn/event-deliver.git"
   },
   "keywords": [
     "ts",
@@ -22,9 +22,9 @@
   "author": "凉菜",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/lc-cn/ts-dev-template/issues"
+    "url": "https://github.com/liucl-cn/event-deliver/issues"
   },
-  "homepage": "https://github.com/lc-cn/ts-dev-template#readme",
+  "homepage": "https://github.com/liucl-cn/event-deliver#readme",
   "devDependencies": {
     "@types/node": "latest",
     "ts-node-dev": "latest",
