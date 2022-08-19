@@ -1,14 +1,13 @@
 {
   "name": "event-deliver",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "一个不一样的事件传送器",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
     "dev": "ts-node-dev -r tsconfig-paths/register ./src/index.ts",
-    "pub": "npm publish --access public",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "pub": "npm publish --access public"
   },
   "repository": {
     "type": "git",
