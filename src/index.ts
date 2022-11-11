@@ -1,114 +1,91 @@
-export class EventDeliver{
-    private _events:Map<EventDeliver.EventName,EventDeliver.Listener[]>=new Map<EventDeliver.EventName, EventDeliver.Listener[]>()
-    maxListeners:number=15
+export type MatcherFn=(...args:any[])=>boolean
+export type Matcher=string|symbol|RegExp|MatcherFn
+export class EventMatcher{
+    private matchers:Map<MatcherFn,EventMatcher.Listener>=new Map<MatcherFn, EventMatcher.Listener>()
     constructor() {
     }
-    setMaxListeners(n:number){
-        this.maxListeners=n
-        return this
+    private getListeners(...args:any[]){
+        return [...this.matchers.keys()]
+            .filter(matcherFn=>matcherFn(...args))
+            .map(matcherFn=>this.matchers.get(matcherFn))
     }
-    private getListeners(event:EventDeliver.EventName){
-        const listeners:EventDeliver.Listener[]=[...(this._events.get(event)||[])]
-        if(typeof event==='string' && (!event.startsWith('before-') && !event.startsWith('after-'))){
-            listeners.unshift(...(this._events.get('before-'+event)||[]))
-            listeners.push(...(this._events.get('after-'+event)||[]))
-        }
-        return listeners
+    listeners(matcher?:Matcher){
+        if(!matcher) return [...this.matchers.values()]
+        if(typeof matcher==='function') return [this.matchers.get(matcher)].filter(Boolean)
+        const result:EventMatcher.Listener[]=[]
+        this.matchers.forEach((listener,matcherFn)=>{
+            if(matcherFn(matcher)){
+                result.push(listener)
+            }
+        })
+        return result
     }
-    getMaxListeners(){
-        return this.maxListeners
+    trap(matcher:Matcher,listener:EventMatcher.Listener){
+        return this.addMatcher(matcher,listener)
     }
-    listeners(event?:EventDeliver.EventName){
-        if(!event) return [...this._events.values()].flat()
-        return [...(this._events.get(event)||[])]
-    }
-    on(event:EventDeliver.EventName,listener:EventDeliver.Listener,prepend?:boolean){
-        return this.addListener(event,listener,prepend)
-    }
-    addListener(event:EventDeliver.EventName,listener:EventDeliver.Listener,prepend?:boolean):EventDeliver.Dispose{
-        if(!this._events.get(event))this._events.set(event,[])
-        const listeners:EventDeliver.Listener[]=this._events.get(event)
-        if(listeners.length>=this.maxListeners)console.warn(`event:${event.toString()} listeners out of maxListeners`)
-        const method:'push'|'unshift'=prepend?'unshift':'push'
-        listeners[method](listener)
+    addMatcher(matcher:Matcher,listener:EventMatcher.Listener):EventMatcher.Dispose{
+        if(typeof matcher !=="function")matcher=EventMatcher.createMatcherFn(matcher)
+        this.matchers.set(matcher,listener)
         const _this=this
-        const dispose:EventDeliver.Dispose=(()=>EventDeliver.remove(listeners,listener)) as EventDeliver.Dispose
+        const dispose:EventMatcher.Dispose=(()=>{
+            this.matchers.delete(matcher as MatcherFn)
+        }) as EventMatcher.Dispose
         return new Proxy(dispose,{
-            get(target:EventDeliver.Dispose, p: PropertyKey, receiver: any): any {
+            get(target:EventMatcher.Dispose, p: PropertyKey, receiver: any): any {
                 return Reflect.get(_this,p,receiver)
             }
         })
     }
-    prependListener(event:EventDeliver.EventName,listener:EventDeliver.Listener,append?:boolean):EventDeliver.Dispose{
-        return this.on(event,listener,!append)
-    }
-    addOnceListener(event:EventDeliver.EventName,listener:EventDeliver.Listener,prepend?:boolean):EventDeliver.Dispose{
-        const dispose=this.on(event,(...args:any[])=>{
+    trapOnce(matcher:Matcher,listener:EventMatcher.Listener):EventMatcher.Dispose{
+        const dispose=this.trap(matcher,(...args:any[])=>{
             listener(...args)
             dispose()
-        },prepend)
+        })
         return dispose
     }
-    once(event:EventDeliver.EventName,listener:EventDeliver.Listener,prepend?:boolean){
-        return this.addOnceListener(event,listener,prepend)
+    offTrap(matcher:Matcher){
+        if(!matcher) this.matchers=new Map<MatcherFn, EventMatcher.Listener>()
+        const matcherFns=this.getMatchers(matcher)
+        matcherFns.forEach(matcherFn=>{
+            this.matchers.delete(matcherFn)
+        })
     }
-    prependOnceListener(event:EventDeliver.EventName,listener:EventDeliver.Listener,append?:boolean):EventDeliver.Dispose{
-        return this.once(event,listener,!append)
-    }
-    removeListener(event?:EventDeliver.EventName,listener?:EventDeliver.Listener){
-        if(!event) this._events=new Map<EventDeliver.EventName, EventDeliver.Listener[]>()
-        if(!listener) this._events.set(event,[])
-        return EventDeliver.remove(this._events.get(event),listener)
-    }
-    off(event?:EventDeliver.EventName,listener?:EventDeliver.Listener){
-        return this.removeListener(event,listener)
-    }
-    async emitAsync(event:EventDeliver.EventName,...args:any[]){
-        for(const listener of this.getListeners(event)){
+    async tripAsync(...args:any[]){
+        for(const listener of this.getListeners(...args)){
             await listener.apply(this,args)
         }
     }
-    emit(event:EventDeliver.EventName,...args:any[]){
-        this.emitAsync(event,...args)
+    trip(...args:any[]){
+        this.tripAsync(...args)
     }
-    before(event:string,listener:EventDeliver.Listener){
-        return this.on('before-'+event,listener)
-    }
-    after(event:string,listener:EventDeliver.Listener){
-        return this.on('after-'+event,listener)
-    }
-    async bailSync(event:EventDeliver.EventName,...args:any[]){
-        for(const listener of this.getListeners(event)){
+    async tripOnceSync(...args:any[]){
+        for(const listener of this.getListeners(...args)){
             const result=await listener.apply(this,args)
             if(result) return result
         }
     }
-    bail(event:EventDeliver.EventName,...args:any[]){
-        for(const listener of this.getListeners(event)){
+    tripOnce(...args:any[]){
+        for(const listener of this.getListeners(...args)){
             const result=listener.apply(this,args)
-            if(result && !EventDeliver.isPromise(result)) return result
+            if(result && !EventMatcher.isPromise(result)) return result
         }
     }
-    listenerCount(event:EventDeliver.EventName){
-        if(!this._events.get(event)) return 0
-        return this._events.get(event).length
-    }
-    eventNames(){
-        return [...this._events.keys()].flat()
+    private getMatchers(matcher:Matcher){
+        if(typeof matcher==='function') return [matcher]
+        return [...this.matchers.keys()].filter(matcherFn=>matcherFn(matcher))
     }
 }
-export namespace EventDeliver{
-    export type EventName=string|symbol
+export namespace EventMatcher{
     export type Listener=(...args:any[])=>any
-    export type Dispose=(()=>boolean) & EventDeliver
+    export type Dispose=(()=>boolean) & EventMatcher
     export function isPromise(object:unknown):object is Promise<unknown>{
         return typeof object==='object' &&  typeof object['then']==='function' && typeof object['catch']==='function'
     }
-    export function remove<T extends any>(list:T[],item:T){
-        const index=list.indexOf(item)
-        if(index<0) return false
-        list.splice(index,1)
-        return true
+    export function createMatcherFn(eventName:string|symbol|RegExp):MatcherFn{
+        return (...args:any[])=>{
+            if(["string",'symbol'].includes(typeof eventName)) return args[0]===eventName
+            return (eventName as RegExp).test(args[0])
+        }
     }
 }
-export default EventDeliver
+export default EventMatcher

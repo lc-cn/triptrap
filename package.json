@@ -1,6 +1,6 @@
 {
-  "name": "event-deliver",
-  "version": "1.0.2",
+  "name": "event-trapper",
+  "version": "0.0.1",
   "description": "一个不一样的事件传送器",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
