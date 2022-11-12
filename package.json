@@ -1,7 +1,7 @@
 {
-  "name": "event-trapper",
-  "version": "0.0.1",
-  "description": "一个不一样的事件传送器",
+  "name": "triptrap",
+  "version": "0.0.2",
+  "description": "轻，但很实用的事件发布订阅器",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {

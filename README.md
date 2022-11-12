@@ -1,31 +1,64 @@
-# ts-dev-template
-ts 开发基础配置环境
-## Notice
-这是一个模板仓库，可用于初始化Ts开发时的一些推荐配置
-## Usage
-1.调用模板创建仓库
+# tripTrap
+轻，但很实用的事件发布订阅器
+# 安装
 ```shell
-点击仓库首页右边绿色按钮(Use This Template)或访问https://github.com/lc-cn/ts-dev-template/generate，根据github提示创建仓库
+npm i triptrap
 ```
-2.拉取你刚刚创建的仓库(`<>`表示括号内描述的内容为必填)
-```shell
-git clone <你刚刚创建的仓库地址>
+# 使用
+- 第一种方式，使用class 实例化
+```javascript
+const Trapper = require('triptrap')
+const trapper=new Trapper()
+// 常规定义
+trapper.trap('foo',(...args)=>{
+    console.log('我是常规监听器',args)
+})
+trapper.trip('foo','bar')
+// 正则匹配
+trapper.trap(/system\..+/,(event)=>{
+    console.log('我是系统事件监听器',event)
+})
+trapper.trip('system.login',{type:'online'})
+// 使用filter
+// 定义过滤器
+const user=(...userIds)=>{
+    return (eventName,userInfo)=>{
+        return userIds.includes(userInfo.user_id)
+    }
+}
+// 订阅user_id为foo或bar的事件
+trapper.trap(user('foo','bar'),(userInfo)=>{
+    console.log('你是foo还是bar',userInfo)
+})
+// 发布私聊事件
+trapper.trip('message.private',{user_id:'foo',user_name:'小菊'})
 ```
-2.安装依赖
-```shell
-npm install
-# 或 npm i
-```
-3.运行开发环境(ts-node-dev运行ts代码)
-```shell
-npm run dev
-```
-4.将ts编译成js(编译代码成普通node可执行的js代码)
-```shell
-npm run build
-```
-5.执行编译后的js(通常生产环境调用)
-```shell
-npm start
-# 或 npm run start
+- 第二种方式，使用defineTripTrap
+```javascript
+const {defineTripTrap} = require('triptrap')
+const {trip,trap}=defineTripTrap
+
+// 常规定义
+trap('foo',(...args)=>{
+    console.log('我是常规监听器',args)
+})
+trip('foo','bar')
+// 正则匹配
+trap(/system\..+/,(event)=>{
+    console.log('我是系统事件监听器',event)
+})
+trip('system.login',{type:'online'})
+// 使用filter
+// 定义过滤器
+const user=(...userIds)=>{
+    return (eventName,userInfo)=>{
+        return userIds.includes(userInfo.user_id)
+    }
+}
+// 订阅user_id为foo或bar的事件
+trap(user('foo','bar'),(userInfo)=>{
+    console.log('你是foo还是bar',userInfo)
+})
+// 发布私聊事件
+trip('message.private',{user_id:'foo',user_name:'小菊'})
 ```
