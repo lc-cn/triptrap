@@ -1,6 +1,6 @@
 {
   "name": "triptrap",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "轻，但很实用的事件发布订阅器",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
