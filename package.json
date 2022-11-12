@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/liucl-cn/event-deliver.git"
+    "url": "git+https://github.com/lc-cn/triptrap.git"
   },
   "keywords": [
     "ts",
@@ -21,9 +21,9 @@
   "author": "凉菜",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/liucl-cn/event-deliver/issues"
+    "url": "https://github.com/lc-cn/triptrap/issues"
   },
-  "homepage": "https://github.com/liucl-cn/event-deliver#readme",
+  "homepage": "https://github.com/lc-cn/triptrap#readme",
   "devDependencies": {
     "@types/node": "latest",
     "ts-node-dev": "latest",
