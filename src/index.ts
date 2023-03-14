@@ -56,7 +56,9 @@ export class Trapper{
         }
     }
     trip(...args:any[]){
-        this.tripAsync(...args)
+        for(const listener of this.getListeners(...args)){
+            listener.apply(this,args)
+        }
     }
     async bailSync(...args:any[]){
         for(const listener of this.getListeners(...args)){
@@ -112,7 +114,9 @@ export function defineTripTrap():TripTrapper{
             return trapper.addMatcher(matcher,listener)
         },
         trip(eventName: string | symbol, ...args:any[]) {
-            return trapper.tripAsync(eventName,...args)
+            for(const listener of getListeners(eventName,...args)){
+                listener.apply(this,args)
+            }
         },
         async tripAsync(eventName:string|symbol,...args:any[]){
             for(const listener of getListeners(eventName,...args)){
