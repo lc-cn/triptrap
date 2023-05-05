@@ -62,3 +62,30 @@ trap(user('foo','bar'),(userInfo)=>{
 // 发布私聊事件
 trip('message.private',{user_id:'foo',user_name:'小菊'})
 ```
+# 如何取消监听？
+## 1. 通过返回函数取消监听
+```javascript
+
+const Trapper = require('triptrap')
+const trapper=new Trapper()
+// 常规定义
+const dispose=trapper.trap('foo',(...args)=>{
+    console.log('我是常规监听器',args)
+})
+// 在不需要时，调用返回函数，即可取消监听
+dispose()
+```
+## 2. 通过offTrap取消监听
+
+```javascript
+
+const Trapper = require('triptrap')
+const trapper=new Trapper()
+// 常规定义
+const listener=(...args)=>{
+    console.log('我是常规监听器',args)
+}
+trapper.trap('foo',listener)
+// 在不需要时，使用offTrap取消监听
+trapper.offTrap('foo',listener)
+```

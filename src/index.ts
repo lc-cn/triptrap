@@ -1,5 +1,16 @@
 export type MatcherFn=(...args:any[])=>boolean
 export type Matcher=string|symbol|RegExp|MatcherFn
+export type Dispose = ()=>boolean|void
+export type ToDispose<T>= T & Dispose
+export namespace Dispose{
+    export function from<T extends object>(source:T,callback):ToDispose<T>{
+        return new Proxy(callback,{
+            get(target, p: string | symbol, receiver: any): any {
+                return Reflect.get(source, p, receiver)
+            }
+        })
+    }
+}
 export class Trapper{
     private matchers:Map<MatcherFn,Trapper.Listener>=new Map<MatcherFn, Trapper.Listener>()
     constructor() {
@@ -23,18 +34,13 @@ export class Trapper{
     trap(matcher:Matcher,listener:Trapper.Listener){
         return this.addMatcher(matcher,listener)
     }
-    addMatcher(matcher:Matcher,listener:Trapper.Listener):Trapper.Dispose{
+    addMatcher<T extends Trapper=this>(this:T,matcher:Matcher,listener:Trapper.Listener):ToDispose<T>{
         if(typeof matcher !=="function")matcher=Trapper.createMatcherFn(matcher)
         this.matchers.set(matcher,listener)
-        const _this=this
         const dispose:Trapper.Dispose=(()=>{
             this.matchers.delete(matcher as MatcherFn)
         }) as Trapper.Dispose
-        return new Proxy(dispose,{
-            get(target:Trapper.Dispose, p: PropertyKey, receiver: any): any {
-                return Reflect.get(_this,p,receiver)
-            }
-        })
+        return Dispose.from(this,dispose)
     }
     trapOnce(matcher:Matcher,listener:Trapper.Listener):Trapper.Dispose{
         const dispose=this.trap(matcher,(...args:any[])=>{
@@ -43,31 +49,35 @@ export class Trapper{
         })
         return dispose
     }
-    offTrap(matcher:Matcher){
+    offTrap(matcher:Matcher,listener?:Trapper.Listener){
         if(!matcher) this.matchers=new Map<MatcherFn, Trapper.Listener>()
         const matcherFns=this.getMatchers(matcher)
         matcherFns.forEach(matcherFn=>{
-            this.matchers.delete(matcherFn)
+            if(!listener || listener===matcherFn){
+                if(!listener || listener===matcherFn){
+                    this.matchers.delete(matcherFn)
+                }
+            }
         })
     }
-    async tripAsync(...args:any[]){
-        for(const listener of this.getListeners(...args)){
+    async tripAsync(matcher:Matcher,...args:any[]){
+        for(const listener of this.getListeners(matcher,...args)){
             await listener.apply(this,args)
         }
     }
-    trip(...args:any[]){
-        for(const listener of this.getListeners(...args)){
+    trip(matcher:Matcher,...args:any[]){
+        for(const listener of this.getListeners(matcher,...args)){
             listener.apply(this,args)
         }
     }
-    async bailSync(...args:any[]){
-        for(const listener of this.getListeners(...args)){
+    async bailSync(matcher:Matcher,...args:any[]){
+        for(const listener of this.getListeners(matcher,...args)){
             const result=await listener.apply(this,args)
             if(result) return result
         }
     }
-    bail(...args:any[]){
-        for(const listener of this.getListeners(...args)){
+    bail(matcher:Matcher,...args:any[]){
+        for(const listener of this.getListeners(matcher,...args)){
             const result=listener.apply(this,args)
             if(result && !Trapper.isPromise(result)) return result
         }
@@ -86,7 +96,7 @@ export interface TripTrapper{
     bail<T=any>(eventName:string|symbol,...args:any[]):T
     bailAsync<T=any>(eventName:string|symbol,...args:any[]):Promise<T>
     listeners(matcher:Matcher):Listener[]
-    delete(matcher:Matcher):TripTrapper
+    delete(matcher:Matcher,listener?:Listener):TripTrapper
     clean():TripTrapper
 }
 export interface Listener{
@@ -138,10 +148,12 @@ export function defineTripTrap():TripTrapper{
         listeners(matcher:Matcher){
           return getMatchers(matcher).map(matcherFn=>matchers.get(matcherFn))
         },
-        delete(matcher){
+        delete(matcher,listener?:Listener){
             const matcherFns=getMatchers(matcher)
             matcherFns.forEach(matcherFn=>{
-                matchers.delete(matcherFn)
+                if(!listener||listener===matcherFn){
+                    matchers.delete(matcherFn)
+                }
             })
             return trapper
         },
