@@ -53,10 +53,8 @@ export class Trapper{
         if(!matcher) this.matchers=new Map<MatcherFn, Trapper.Listener>()
         const matcherFns=this.getMatchers(matcher)
         matcherFns.forEach(matcherFn=>{
-            if(!listener || listener===matcherFn){
-                if(!listener || listener===matcherFn){
-                    this.matchers.delete(matcherFn)
-                }
+            if (!listener || listener === this.matchers.get(matcherFn)) {
+                this.matchers.delete(matcherFn);
             }
         })
     }
